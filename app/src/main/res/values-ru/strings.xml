@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lab2</string>
+    <string name="search_section">Поиск</string>
+    <string name="trending_section">Популярное</string>
+    <string name="favorite_section">Избранное</string>
+</resources>
