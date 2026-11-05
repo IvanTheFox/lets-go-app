@@ -169,7 +169,7 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                             maxLines = 2
                         )
                         Text(
-                            text = event.type.typeName,
+                            text = stringResource(event.type.typeNameId),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

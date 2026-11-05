@@ -26,7 +26,7 @@ class EventProvider {
             Event(
                 2,
                 "Ancient Egypt",
-                EventType.EXHIBISTION,
+                EventType.EXHIBITION,
                 250.0,
                 Instant.parse("2026-12-16T09:00:00Z"),
                 76

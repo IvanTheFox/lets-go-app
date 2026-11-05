@@ -1,13 +1,14 @@
 package com.example.lab2.model
 
+import com.example.lab2.R
 import java.time.Instant
 
-enum class EventType(val typeName: String) {
-    MOVIE("Movie"),
-    CONCERT("Concert"),
-    EXHIBISTION("Exhibition"),
-    STAND_UP("Stand-up"),
-    PLAY("Play")
+enum class EventType(val typeNameId: Int) {
+    MOVIE(R.string.event_type_movie),
+    CONCERT(R.string.event_type_concert),
+    EXHIBITION(R.string.event_type_exhibition),
+    STAND_UP(R.string.event_type_stand_up),
+    PLAY(R.string.event_type_play)
 }
 
 data class Event(

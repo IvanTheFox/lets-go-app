@@ -3,4 +3,9 @@
     <string name="search_section">Search</string>
     <string name="trending_section">Trending</string>
     <string name="favorite_section">Favorite</string>
+    <string name="event_type_movie">Movie</string>
+    <string name="event_type_concert">Concert</string>
+    <string name="event_type_exhibition">Exhibition</string>
+    <string name="event_type_stand_up">Stand-up</string>
+    <string name="event_type_play">Play</string>
 </resources>

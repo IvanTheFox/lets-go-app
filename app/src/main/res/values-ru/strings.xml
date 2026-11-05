@@ -4,4 +4,9 @@
     <string name="search_section">Поиск</string>
     <string name="trending_section">Популярное</string>
     <string name="favorite_section">Избранное</string>
+    <string name="event_type_movie">Фильм</string>
+    <string name="event_type_concert">Концерт</string>
+    <string name="event_type_exhibition">Выставка</string>
+    <string name="event_type_stand_up">Стэндап</string>
+    <string name="event_type_play">Постановка</string>
 </resources>
