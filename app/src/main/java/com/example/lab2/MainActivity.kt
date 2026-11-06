@@ -28,12 +28,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,8 +53,37 @@ import androidx.compose.ui.unit.dp
 import com.example.lab2.model.Event
 import com.example.lab2.model.EventProvider
 import com.example.lab2.ui.theme.Lab2Theme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+fun interface PlaceholderNotifier {
+    fun notifyPlaceholder()
+}
+
+val LocalPlaceholderNotifier = staticCompositionLocalOf<PlaceholderNotifier> {
+    error("Notifications 'Not Implemented' were not provided")
+}
+
+fun CoroutineScope.showNotImplemented(snackbarHostState: SnackbarHostState, notImplementedMessage: String) {
+    launch {
+        snackbarHostState.currentSnackbarData?.dismiss()
+        snackbarHostState.showSnackbar(
+            message = notImplementedMessage,
+            withDismissAction = true,
+            duration = SnackbarDuration.Short
+        )
+    }
+}
+
+val MaterialTheme.snackbar: PlaceholderNotifier @Composable @ReadOnlyComposable get() = LocalPlaceholderNotifier.current
+
+enum class AppSection(val nameId: Int, val icon: Int) {
+    SEARCH(R.string.search_section, R.drawable.search),
+    TRENDING(R.string.trending_section, R.drawable.trending),
+    FAVORITES(R.string.favorite_section, R.drawable.favorites)
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,12 +95,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
-enum class AppSection(val nameId: Int, val icon: Int) {
-    SEARCH(R.string.search_section, R.drawable.search),
-    TRENDING(R.string.trending_section, R.drawable.trending),
-    FAVORITES(R.string.favorite_section, R.drawable.favorites)
 }
 
 @Composable
@@ -119,16 +150,29 @@ fun TrendingAppSection(paddingValues: PaddingValues) {
 
 @Composable
 fun MainScreen(selectedSection: AppSection, changeSectionCallback: (newSection: AppSection) -> Unit) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            NavigationBar(selectedSection, changeSectionCallback)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val notImplementedMessage = "Feature not implemented yet"
+
+    val placeholderNotifier = remember(notImplementedMessage, snackbarHostState) {
+        PlaceholderNotifier {
+            scope.showNotImplemented(snackbarHostState, notImplementedMessage)
         }
-    ) { innerPadding ->
-        when (selectedSection) {
-            AppSection.SEARCH -> NotImplementedSection()
-            AppSection.TRENDING -> TrendingAppSection(innerPadding)
-            AppSection.FAVORITES -> NotImplementedSection()
+    }
+
+    CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = {
+                NavigationBar(selectedSection, changeSectionCallback)
+            }
+        ) { innerPadding ->
+            when (selectedSection) {
+                AppSection.SEARCH -> NotImplementedSection()
+                AppSection.TRENDING -> TrendingAppSection(innerPadding)
+                AppSection.FAVORITES -> NotImplementedSection()
+            }
         }
     }
 }
@@ -206,7 +250,8 @@ fun EventCard(event: Event, isFavorite: Boolean) {
             }
 
             IconButton(
-                onClick = { EventProvider.favoriteCallback(event, !isFavorite) },
+                onClick = MaterialTheme.snackbar::notifyPlaceholder,
+//                onClick = { EventProvider.favoriteCallback(event, !isFavorite) },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
