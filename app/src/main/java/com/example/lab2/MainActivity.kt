@@ -21,6 +21,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -104,15 +110,33 @@ fun NavigationBar(selectedSection: AppSection, changeSectionCallback: (newSectio
 
 @Composable
 fun TrendingAppSection(paddingValues: PaddingValues) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
-    ) {
-        items(EventProvider.allEvents) { event ->
-            EventCard(event, EventProvider.isFavorite(event))
+    var selectedEventId by rememberSaveable { mutableStateOf(-1) }
+    val listState = rememberLazyListState()
+
+    val selectedEvent = EventProvider.allEvents.find { it.id == selectedEventId }
+
+    if (selectedEvent != null) {
+        ExpandedEventCard(
+            event = selectedEvent,
+            onBack = { selectedEventId = -1 },
+            modifier = Modifier.padding(paddingValues)
+        )
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            items(EventProvider.allEvents) { event ->
+                EventCard(
+                    event = event,
+                    isFavorite = EventProvider.isFavorite(event),
+                    onClick = { selectedEventId = event.id }
+                )
+            }
         }
     }
 }
@@ -134,8 +158,9 @@ fun MainScreen(selectedSection: AppSection, changeSectionCallback: (newSection: 
 }
 
 @Composable
-fun EventCard(event: Event, isFavorite: Boolean) {
+fun EventCard(event: Event, isFavorite: Boolean, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
@@ -224,6 +249,156 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun ExpandedEventCard(
+    event: Event,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isFavorite = EventProvider.isFavorite(event)
+
+    val formattedDate = remember(event.id) {
+        DateTimeFormatter.ofPattern("dd.MM.yyyy | HH:mm")
+            .format(event.datetime.atZone(ZoneId.systemDefault()))
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 15.dp, vertical = 15.dp)
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    painter = painterResource(R.drawable.arrow_back),
+                    contentDescription = stringResource(R.string.back)
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(
+                onClick = { EventProvider.favoriteCallback(event, !isFavorite) }
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = if (isFavorite) R.drawable.favorites
+                        else R.drawable.unfavorites
+                    ),
+                    contentDescription = stringResource(
+                        if (isFavorite) R.string.remove_from_favorites
+                        else R.string.add_to_favorites
+                    ),
+                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // Image
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(220.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(event.type.typeNameId),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            // Категория и название
+            Text(
+                text = stringResource(event.type.typeNameId).uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = event.name,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Характеристика
+            EventInfoRow(
+                label = stringResource(R.string.event_date),
+                value = formattedDate
+            )
+            HorizontalDivider()
+            EventInfoRow(
+                label = stringResource(R.string.event_price),
+                value = "${event.price}₽"
+            )
+            HorizontalDivider()
+            EventInfoRow(
+                label = stringResource(R.string.event_favorited_times),
+                value = event.timesFavorited.toString()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = stringResource(R.string.about_event),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.event_description_placeholder),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Купить билет
+            Button(
+                onClick = { //SnackBar
+                     },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Text(stringResource(R.string.buy_ticket))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun EventInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 

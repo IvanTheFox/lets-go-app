@@ -8,4 +8,13 @@
     <string name="event_type_exhibition">Exhibition</string>
     <string name="event_type_stand_up">Stand-up</string>
     <string name="event_type_play">Play</string>
+    <string name="back">Back</string>
+    <string name="event_date">Date &amp; time</string>
+    <string name="event_price">Price</string>
+    <string name="event_favorited_times">Favorited</string>
+    <string name="about_event">About event</string>
+    <string name="event_description_placeholder">Detailed description will appear here soon.</string>
+    <string name="buy_ticket">Buy ticket</string>
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
 </resources>

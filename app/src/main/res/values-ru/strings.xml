@@ -9,4 +9,13 @@
     <string name="event_type_exhibition">Выставка</string>
     <string name="event_type_stand_up">Стэндап</string>
     <string name="event_type_play">Постановка</string>
+    <string name="back">Назад</string>
+    <string name="event_date">Дата и время</string>
+    <string name="event_price">Стоимость</string>
+    <string name="event_favorited_times">В избранном</string>
+    <string name="about_event">О событии</string>
+    <string name="event_description_placeholder">Подробное описание появится позже.</string>
+    <string name="buy_ticket">Купить билет</string>
+    <string name="add_to_favorites">Добавить в избранное</string>
+    <string name="remove_from_favorites">Удалить из избранного</string>
 </resources>
