@@ -124,12 +124,11 @@ sealed interface Destination {
 
 @Composable
 fun AppNavHost(
-    navHostController: NavHostController,
     startDestination: Destination,
     modifier: Modifier = Modifier
 ) {
     NavHost(
-        navController = navHostController,
+        navController = MaterialTheme.navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
@@ -168,47 +167,36 @@ fun AppNavHost(
 
 @Composable
 fun AppNavigationBar(modifier: Modifier = Modifier) {
-    val navController = rememberNavController()
-    val startDestination = Destination.TrendingAppSection
+    val navController = MaterialTheme.navController
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        bottomBar = {
-            NavigationBar(
-                windowInsets = NavigationBarDefaults.windowInsets,
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ) {
-                val mainSections: List<MainAppSection> = listOf(
-                    Destination.SearchAppSection,
-                    Destination.TrendingAppSection,
-                    Destination.FavoritesAppSection
-                )
-                mainSections.forEach { section ->
-                    NavigationBarItem(
-                        selected = currentDestination?.hierarchy?.any {
-                            it.hasRoute(section::class)
-                        } == true,
-                        onClick = {
-                            navController.navigate(section) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(painterResource(section.iconId), stringResource(section.nameId)) },
-                        label = { Text(stringResource(section.nameId)) },
-                        alwaysShowLabel = false
-                    )
-                }
-            }
-        }
-    ) { contentPadding ->
-        CompositionLocalProvider(LocalNavController provides navController) {
-            AppNavHost(navController, startDestination, modifier = Modifier.padding(contentPadding))
+    NavigationBar(
+        windowInsets = NavigationBarDefaults.windowInsets,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        val mainSections: List<MainAppSection> = listOf(
+            Destination.SearchAppSection,
+            Destination.TrendingAppSection,
+            Destination.FavoritesAppSection
+        )
+        mainSections.forEach { section ->
+            NavigationBarItem(
+                selected = currentDestination?.hierarchy?.any {
+                    it.hasRoute(section::class)
+                } == true,
+                onClick = {
+                    navController.navigate(section) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                icon = { Icon(painterResource(section.iconId), stringResource(section.nameId)) },
+                label = { Text(stringResource(section.nameId)) },
+                alwaysShowLabel = false
+            )
         }
     }
 }
@@ -229,6 +217,9 @@ class MainActivity : ComponentActivity() {
 //region Interface design
 @Composable
 fun EventsAndTicketsApp() {
+    val navController = rememberNavController()
+    val startDestination = Destination.TrendingAppSection
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val notImplementedMessage = "Feature not implemented yet"
@@ -239,13 +230,16 @@ fun EventsAndTicketsApp() {
         }
     }
 
-    CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background,
-            snackbarHost = { SnackbarHost(snackbarHostState) }
-        ) { innerPadding ->
-            AppNavigationBar(modifier = Modifier.padding(innerPadding))
+    CompositionLocalProvider(LocalNavController provides navController) {
+        CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = MaterialTheme.colorScheme.surface,
+                snackbarHost = { SnackbarHost(snackbarHostState) },
+                bottomBar = { AppNavigationBar() }
+            ) { contentPadding ->
+                AppNavHost(startDestination, modifier = Modifier.padding(contentPadding))
+            }
         }
     }
 }
@@ -325,7 +319,7 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Text(
-                            text = DateTimeFormatter.ofPattern("MM.dd | HH:mm").format(
+                            text = DateTimeFormatter.ofPattern("dd.MM | HH:mm").format(
                                 event.datetime.atZone(ZoneId.systemDefault())
                             ),
                             style = MaterialTheme.typography.bodySmall,
