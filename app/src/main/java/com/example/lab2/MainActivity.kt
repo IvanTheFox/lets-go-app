@@ -1,7 +1,6 @@
 package com.example.lab2
 
 import android.os.Bundle
-import androidx.compose.runtime.saveable.Saver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Card
@@ -45,10 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,18 +64,11 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
-
 
 //region Snackbar notification implementation
 fun interface PlaceholderNotifier {
@@ -147,7 +134,7 @@ fun AppNavHost(
         modifier = modifier
     ) {
         composable<Destination.TrendingAppSection> {
-            TrendingAppSection()
+            TrendingAppSection(modifier = modifier)
         }
 
         composable<Destination.SearchAppSection> {
@@ -167,7 +154,14 @@ fun AppNavHost(
         composable<Destination.ExpandedEventCard> { backStackEntry ->
             val expandedEvent = backStackEntry.toRoute<Destination.ExpandedEventCard>()
             val event = EventProvider.getEventById(expandedEvent.eventId)
-            MaterialTheme.snackbar::notifyPlaceholder
+            if (event == null) {
+                val notifier = MaterialTheme.snackbar
+                LaunchedEffect(Unit) {
+                    notifier.notifyPlaceholder()
+                }
+            } else {
+                ExpandedEventCard(event)
+            }
         }
     }
 }
@@ -228,7 +222,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
+//region Interface design
 @Composable
 fun EventsAndTicketsApp() {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -511,3 +505,4 @@ private fun EventInfoRow(label: String, value: String) {
         )
     }
 }
+//endregion

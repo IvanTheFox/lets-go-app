@@ -18,4 +18,6 @@
     <string name="buy_ticket">Купить билет</string>
     <string name="add_to_favorites">Добавить в избранное</string>
     <string name="remove_from_favorites">Удалить из избранного</string>
+    <string name="not_implemented_message">Эта функция пока не реализована!</string>
+    <string name="unknown_event">Мероприятие не найдено!</string>
 </resources>
