@@ -1,7 +1,6 @@
 package com.example.lab2
 
 import android.os.Bundle
-import androidx.compose.runtime.saveable.Saver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,13 +18,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -35,12 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,14 +45,29 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.example.lab2.model.Event
 import com.example.lab2.model.EventProvider
 import com.example.lab2.ui.theme.Lab2Theme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
 
+
+//region Snackbar notification implementation
 fun interface PlaceholderNotifier {
     fun notifyPlaceholder()
 }
@@ -78,12 +88,143 @@ fun CoroutineScope.showNotImplemented(snackbarHostState: SnackbarHostState, notI
 }
 
 val MaterialTheme.snackbar: PlaceholderNotifier @Composable @ReadOnlyComposable get() = LocalPlaceholderNotifier.current
+//endregion
 
-enum class AppSection(val nameId: Int, val icon: Int) {
-    SEARCH(R.string.search_section, R.drawable.search),
-    TRENDING(R.string.trending_section, R.drawable.trending),
-    FAVORITES(R.string.favorite_section, R.drawable.favorites)
+//region Navigation implementation
+@Serializable
+sealed interface Destination {
+    @Serializable
+    object TrendingAppSection : Destination
+    @Serializable
+    object SearchAppSection : Destination
+    @Serializable
+    object FavoritesAppSection : Destination
+    @Serializable
+    class ExpandedEventCard(val eventId: Int) : Destination
 }
+
+@Composable
+fun AppNavHost(
+    navHostController: NavHostController,
+    startDestination: Destination,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navHostController,
+        startDestination = startDestination,
+        modifier = modifier
+    ) {
+        composable<Destination.TrendingAppSection> {
+            TrendingAppSection()
+        }
+
+        composable<Destination.SearchAppSection> {
+            val notifier = MaterialTheme.snackbar
+            LaunchedEffect(Unit) {
+                notifier.notifyPlaceholder()
+            }
+        }
+
+        composable<Destination.FavoritesAppSection> {
+            val notifier = MaterialTheme.snackbar
+            LaunchedEffect(Unit) {
+                notifier.notifyPlaceholder()
+            }
+        }
+
+        composable<Destination.ExpandedEventCard> { backStackEntry ->
+            val expandedEvent = backStackEntry.toRoute<Destination.ExpandedEventCard>()
+            val event = EventProvider.getEventById(expandedEvent.eventId)
+            MaterialTheme.snackbar::notifyPlaceholder
+        }
+    }
+}
+
+@Composable
+fun AppNavigationBar(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
+    val startDestination = Destination.TrendingAppSection
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    Scaffold(
+        modifier = modifier,
+        bottomBar = {
+            NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
+                NavigationBarItem(
+                    selected = currentDestination?.hierarchy?.any {
+                        it.hasRoute<Destination.SearchAppSection>()
+                    } == true,
+                    onClick = {
+                        navController.navigate(Destination.SearchAppSection) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            painter = painterResource(R.drawable.search),
+                            contentDescription = stringResource(R.string.search_section)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.search_section)) },
+                    alwaysShowLabel = false
+                )
+                NavigationBarItem(
+                    selected = currentDestination?.hierarchy?.any {
+                        it.hasRoute<Destination.TrendingAppSection>()
+                    } == true,
+                    onClick = {
+                        navController.navigate(Destination.TrendingAppSection) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            painter = painterResource(R.drawable.trending),
+                            contentDescription = stringResource(R.string.trending_section)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.trending_section)) },
+                    alwaysShowLabel = false
+                )
+                NavigationBarItem(
+                    selected = currentDestination?.hierarchy?.any {
+                        it.hasRoute<Destination.FavoritesAppSection>()
+                    } == true,
+                    onClick = {
+                        navController.navigate(Destination.FavoritesAppSection) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            painter = painterResource(R.drawable.favorites),
+                            contentDescription = stringResource(R.string.favorite_section)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.favorite_section)) },
+                    alwaysShowLabel = false
+                )
+            }
+        }
+    ) { contentPadding ->
+        AppNavHost(navController, startDestination, modifier = Modifier.padding(contentPadding))
+    }
+}
+//endregion
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -99,57 +240,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun EventsAndTicketsApp() {
-    var selectedSection by rememberSaveable(
-        stateSaver = Saver(
-            save = { it.name },
-            restore = { AppSection.valueOf(it) }
-        )
-    ) { mutableStateOf(AppSection.TRENDING) }
-
-    MainScreen(selectedSection) {newSection ->
-        selectedSection = newSection
-    }
-}
-
-@Composable
-fun NavigationBar(selectedSection: AppSection, changeSectionCallback: (newSection: AppSection) -> Unit) {
-    NavigationBar {
-        AppSection.entries.forEach { section ->
-            NavigationBarItem(
-                selected = section == selectedSection,
-                onClick = {
-                    changeSectionCallback(section)
-                },
-                icon = {
-                    Icon(
-                        painter = painterResource(section.icon),
-                        contentDescription = stringResource(section.nameId)
-                    )
-                },
-                label = { Text(stringResource(section.nameId)) },
-                alwaysShowLabel = false
-            )
-        }
-    }
-}
-
-@Composable
-fun TrendingAppSection(paddingValues: PaddingValues) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
-    ) {
-        items(EventProvider.allEvents) { event ->
-            EventCard(event, EventProvider.isFavorite(event))
-        }
-    }
-}
-
-@Composable
-fun MainScreen(selectedSection: AppSection, changeSectionCallback: (newSection: AppSection) -> Unit) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val notImplementedMessage = "Feature not implemented yet"
@@ -163,16 +253,23 @@ fun MainScreen(selectedSection: AppSection, changeSectionCallback: (newSection: 
     CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            bottomBar = {
-                NavigationBar(selectedSection, changeSectionCallback)
-            }
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { innerPadding ->
-            when (selectedSection) {
-                AppSection.SEARCH -> NotImplementedSection()
-                AppSection.TRENDING -> TrendingAppSection(innerPadding)
-                AppSection.FAVORITES -> NotImplementedSection()
-            }
+            AppNavigationBar(Modifier.padding(innerPadding))
+        }
+    }
+}
+
+@Composable
+fun TrendingAppSection(modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(vertical = 16.dp)
+    ) {
+        items(EventProvider.allEvents) { event ->
+            EventCard(event, false)
         }
     }
 }
@@ -251,7 +348,6 @@ fun EventCard(event: Event, isFavorite: Boolean) {
 
             IconButton(
                 onClick = MaterialTheme.snackbar::notifyPlaceholder,
-//                onClick = { EventProvider.favoriteCallback(event, !isFavorite) },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
@@ -269,15 +365,5 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                 )
             }
         }
-    }
-}
-
-@Composable
-fun NotImplementedSection() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("This section is not implemented! ;(")
     }
 }

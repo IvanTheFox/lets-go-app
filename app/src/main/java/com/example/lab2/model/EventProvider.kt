@@ -49,15 +49,10 @@ class EventProvider {
             )
         )
 
-        private val _favoriteEvents = mutableStateListOf<Int>()
-        fun favoriteCallback(event: Event, isFavorite: Boolean) {
-            if (!isFavorite && _favoriteEvents.contains(event.id))
-                _favoriteEvents.remove(event.id)
-            else if (isFavorite && !_favoriteEvents.contains(event.id))
-                _favoriteEvents.add(event.id)
-        }
-        fun isFavorite(event: Event): Boolean {
-            return _favoriteEvents.contains(event.id)
+        public fun getEventById(id: Int): Event? {
+            return allEvents.firstOrNull {e ->
+                e.id == id
+            }
         }
     }
 }
