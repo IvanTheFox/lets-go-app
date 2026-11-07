@@ -87,18 +87,34 @@ fun CoroutineScope.showNotImplemented(snackbarHostState: SnackbarHostState, notI
     }
 }
 
-val MaterialTheme.snackbar: PlaceholderNotifier @Composable @ReadOnlyComposable get() = LocalPlaceholderNotifier.current
+val MaterialTheme.snackbar: PlaceholderNotifier
+    @Composable @ReadOnlyComposable get() = LocalPlaceholderNotifier.current
 //endregion
 
 //region Navigation implementation
+val LocalNavController = staticCompositionLocalOf<NavHostController> {
+    error("No navigation controller provided")
+}
+val MaterialTheme.navController: NavHostController
+    @Composable @ReadOnlyComposable get() = LocalNavController.current
+
+@Serializable
+abstract class MainAppSection(
+    val nameId: Int,
+    val iconId: Int
+): Destination
+
 @Serializable
 sealed interface Destination {
     @Serializable
-    object TrendingAppSection : Destination
+    object TrendingAppSection :
+        MainAppSection(R.string.trending_section, R.drawable.trending)
     @Serializable
-    object SearchAppSection : Destination
+    object SearchAppSection :
+        MainAppSection(R.string.search_section, R.drawable.search)
     @Serializable
-    object FavoritesAppSection : Destination
+    object FavoritesAppSection :
+        MainAppSection(R.string.favorite_section, R.drawable.favorites)
     @Serializable
     class ExpandedEventCard(val eventId: Int) : Destination
 }
@@ -152,76 +168,34 @@ fun AppNavigationBar(modifier: Modifier = Modifier) {
         modifier = modifier,
         bottomBar = {
             NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
-                NavigationBarItem(
-                    selected = currentDestination?.hierarchy?.any {
-                        it.hasRoute<Destination.SearchAppSection>()
-                    } == true,
-                    onClick = {
-                        navController.navigate(Destination.SearchAppSection) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = {
-                        Icon(
-                            painter = painterResource(R.drawable.search),
-                            contentDescription = stringResource(R.string.search_section)
-                        )
-                    },
-                    label = { Text(stringResource(R.string.search_section)) },
-                    alwaysShowLabel = false
+                val mainSections: List<MainAppSection> = listOf(
+                    Destination.SearchAppSection,
+                    Destination.TrendingAppSection,
+                    Destination.FavoritesAppSection
                 )
-                NavigationBarItem(
-                    selected = currentDestination?.hierarchy?.any {
-                        it.hasRoute<Destination.TrendingAppSection>()
-                    } == true,
-                    onClick = {
-                        navController.navigate(Destination.TrendingAppSection) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                mainSections.forEach { section ->
+                    NavigationBarItem(
+                        selected = currentDestination?.hierarchy?.any {
+                            it.hasRoute(section::class)
+                        } == true,
+                        onClick = {
+                            navController.navigate(section) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = {
-                        Icon(
-                            painter = painterResource(R.drawable.trending),
-                            contentDescription = stringResource(R.string.trending_section)
-                        )
-                    },
-                    label = { Text(stringResource(R.string.trending_section)) },
-                    alwaysShowLabel = false
-                )
-                NavigationBarItem(
-                    selected = currentDestination?.hierarchy?.any {
-                        it.hasRoute<Destination.FavoritesAppSection>()
-                    } == true,
-                    onClick = {
-                        navController.navigate(Destination.FavoritesAppSection) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = {
-                        Icon(
-                            painter = painterResource(R.drawable.favorites),
-                            contentDescription = stringResource(R.string.favorite_section)
-                        )
-                    },
-                    label = { Text(stringResource(R.string.favorite_section)) },
-                    alwaysShowLabel = false
-                )
+                        },
+                        icon = { Icon(painterResource(section.iconId), stringResource(section.nameId)) },
+                        label = { Text(stringResource(section.nameId)) },
+                        alwaysShowLabel = false
+                    )
+                }
             }
         }
     ) { contentPadding ->
-        AppNavHost(navController, startDestination, modifier = Modifier.padding(contentPadding))
+        CompositionLocalProvider(LocalNavController provides navController) {
+            AppNavHost(navController, startDestination, modifier = Modifier.padding(contentPadding))
+        }
     }
 }
 //endregion
