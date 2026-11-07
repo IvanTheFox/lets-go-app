@@ -23,8 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +47,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -134,7 +134,7 @@ fun AppNavHost(
         modifier = modifier
     ) {
         composable<Destination.TrendingAppSection> {
-            TrendingAppSection(modifier = modifier)
+            TrendingAppSection()
         }
 
         composable<Destination.SearchAppSection> {
@@ -176,8 +176,12 @@ fun AppNavigationBar(modifier: Modifier = Modifier) {
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surface,
         bottomBar = {
-            NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
+            NavigationBar(
+                windowInsets = NavigationBarDefaults.windowInsets,
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ) {
                 val mainSections: List<MainAppSection> = listOf(
                     Destination.SearchAppSection,
                     Destination.TrendingAppSection,
@@ -238,9 +242,10 @@ fun EventsAndTicketsApp() {
     CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { innerPadding ->
-            AppNavigationBar(Modifier.padding(innerPadding))
+            AppNavigationBar(modifier = Modifier.padding(innerPadding))
         }
     }
 }
@@ -249,7 +254,8 @@ fun EventsAndTicketsApp() {
 fun TrendingAppSection(modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
@@ -267,6 +273,10 @@ fun EventCard(event: Event, isFavorite: Boolean) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .height(150.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
         onClick = {
             navController.navigate(Destination.ExpandedEventCard(event.id))
         }
@@ -279,7 +289,7 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                         .fillMaxHeight()
                         .padding(8.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.LightGray)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     // Image(...)
                 }
@@ -296,6 +306,7 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                             text = event.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2
                         )
                         Text(
@@ -314,8 +325,9 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Text(
-                            text = DateTimeFormatter.ofPattern("MM.dd | HH:mm").format(event.datetime.atZone(
-                                ZoneId.systemDefault())),
+                            text = DateTimeFormatter.ofPattern("MM.dd | HH:mm").format(
+                                event.datetime.atZone(ZoneId.systemDefault())
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -350,7 +362,8 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                 Icon(
                     painter = painterResource(id = starIcon),
                     contentDescription = "Add to Favorites",
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -372,6 +385,7 @@ fun ExpandedEventCard(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
         Row(
@@ -381,12 +395,13 @@ fun ExpandedEventCard(
             IconButton(onClick = MaterialTheme.navController::popBackStack) {
                 Icon(
                     painter = painterResource(R.drawable.arrow_back),
-                    contentDescription = stringResource(R.string.back)
+                    contentDescription = stringResource(R.string.back),
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(
-                onClick = { /* Add to favorites via EventProvider? */ }
+                onClick = MaterialTheme.snackbar::notifyPlaceholder
             ) {
                 Icon(
                     painter = painterResource(
@@ -433,7 +448,8 @@ fun ExpandedEventCard(
             Text(
                 text = event.name,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -443,12 +459,14 @@ fun ExpandedEventCard(
                 label = stringResource(R.string.event_date),
                 value = formattedDate
             )
-            HorizontalDivider()
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
             EventInfoRow(
                 label = stringResource(R.string.event_price),
                 value = "${event.price}₽"
             )
-            HorizontalDivider()
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             EventInfoRow(
                 label = stringResource(R.string.event_favorited_times),
                 value = event.timesFavorited.toString()
@@ -459,7 +477,8 @@ fun ExpandedEventCard(
             Text(
                 text = stringResource(R.string.about_event),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -501,7 +520,8 @@ private fun EventInfoRow(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
