@@ -51,11 +51,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.example.lab2.model.Event
 import com.example.lab2.model.EventProvider
 import com.example.lab2.ui.theme.Lab2Theme
@@ -65,10 +60,15 @@ import kotlinx.serialization.Serializable
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.runtime.LaunchedEffect
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSerializable
+import androidx.compose.runtime.setValue
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 
 //region Snackbar notification implementation
 fun interface PlaceholderNotifier {
@@ -95,20 +95,21 @@ val MaterialTheme.snackbar: PlaceholderNotifier
 //endregion
 
 //region Navigation implementation
-val LocalNavController = staticCompositionLocalOf<NavHostController> {
-    error("No navigation controller provided")
+val LocalNavigator = staticCompositionLocalOf<Navigator> {
+    error("No Navigator was provided.")
 }
-val MaterialTheme.navController: NavHostController
-    @Composable @ReadOnlyComposable get() = LocalNavController.current
+val MaterialTheme.navigator: Navigator
+    @Composable @ReadOnlyComposable get() = LocalNavigator.current
 
+//region Navigation destinations
 @Serializable
-abstract class MainAppSection(
+sealed class MainAppSection(
     val nameId: Int,
     val iconId: Int
 ): Destination
 
 @Serializable
-sealed interface Destination {
+sealed interface Destination: NavKey {
     @Serializable
     object TrendingAppSection :
         MainAppSection(R.string.trending_section, R.drawable.trending)
@@ -121,57 +122,11 @@ sealed interface Destination {
     @Serializable
     class ExpandedEventCard(val eventId: Int) : Destination
 }
+//endregion
 
 @Composable
-fun AppNavHost(
-    startDestination: Destination,
-    modifier: Modifier = Modifier
-) {
-    NavHost(
-        navController = MaterialTheme.navController,
-        startDestination = startDestination,
-        modifier = modifier
-    ) {
-        composable<Destination.TrendingAppSection> {
-            TrendingAppSection()
-        }
-
-        composable<Destination.SearchAppSection> {
-            val notifier = MaterialTheme.snackbar
-            LaunchedEffect(Unit) {
-                notifier.notifyPlaceholder()
-            }
-        }
-
-        composable<Destination.FavoritesAppSection> {
-            val notifier = MaterialTheme.snackbar
-            LaunchedEffect(Unit) {
-                notifier.notifyPlaceholder()
-            }
-        }
-
-        composable<Destination.ExpandedEventCard> { backStackEntry ->
-            val expandedEvent = backStackEntry.toRoute<Destination.ExpandedEventCard>()
-            val event = EventProvider.getEventById(expandedEvent.eventId)
-            if (event == null) {
-                val notifier = MaterialTheme.snackbar
-                LaunchedEffect(Unit) {
-                    notifier.notifyPlaceholder()
-                }
-            } else {
-                ExpandedEventCard(event)
-            }
-        }
-    }
-}
-
-@Composable
-fun AppNavigationBar(modifier: Modifier = Modifier) {
-    val navController = MaterialTheme.navController
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-
+fun AppNavigationBar() {
+    val navigator = MaterialTheme.navigator
     NavigationBar(
         windowInsets = NavigationBarDefaults.windowInsets,
         containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -183,22 +138,90 @@ fun AppNavigationBar(modifier: Modifier = Modifier) {
         )
         mainSections.forEach { section ->
             NavigationBarItem(
-                selected = currentDestination?.hierarchy?.any {
-                    it.hasRoute(section::class)
-                } == true,
-                onClick = {
-                    navController.navigate(section) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
+                selected = navigator.state.activeSection == section,
+                onClick = { navigator.navigate(section) },
                 icon = { Icon(painterResource(section.iconId), stringResource(section.nameId)) },
                 label = { Text(stringResource(section.nameId)) },
                 alwaysShowLabel = false
             )
         }
     }
+}
+
+class NavigationState(
+    activeSection: MutableState<MainAppSection>,
+    val backStacks: Map<MainAppSection, NavBackStack<NavKey>>
+) {
+    var activeSection by activeSection
+    val currentBackStack: NavBackStack<NavKey>
+        get() = backStacks[activeSection] ?: error("Tried to switch to an unknown app section.")
+}
+@Composable
+fun rememberNavState(
+    startAppSection: MainAppSection,
+    appSections: Set<MainAppSection>
+): NavigationState {
+    val activeSection = rememberSerializable(startAppSection, appSections) {
+        mutableStateOf(startAppSection)
+    }
+
+    val backStacks = appSections.associateWith {
+        key: Destination -> rememberNavBackStack(key)
+    }
+
+    return remember(startAppSection, appSections) {
+        NavigationState(activeSection, backStacks)
+    }
+}
+
+class Navigator(val state: NavigationState) {
+    fun navigate(destination: Destination) {
+        if (destination is MainAppSection) {
+            state.activeSection = destination
+        } else {
+            state.currentBackStack.add(destination)
+        }
+    }
+
+    fun goBack() {
+        state.currentBackStack.removeLastOrNull()
+    }
+}
+
+@Composable
+fun AppNavigation(modifier: Modifier = Modifier) {
+    val navigator = MaterialTheme.navigator
+    NavDisplay(
+        modifier = modifier,
+        backStack = navigator.state.currentBackStack,
+        onBack = { navigator.goBack() },
+        entryProvider = entryProvider {
+            entry<Destination.TrendingAppSection> { TrendingAppSection() }
+            entry<Destination.SearchAppSection> {
+                val notifier = MaterialTheme.snackbar
+                LaunchedEffect(Unit) {
+                    notifier.notifyPlaceholder()
+                }
+            }
+            entry<Destination.FavoritesAppSection> {
+                val notifier = MaterialTheme.snackbar
+                LaunchedEffect(Unit) {
+                    notifier.notifyPlaceholder()
+                }
+            }
+            entry<Destination.ExpandedEventCard> { key ->
+                val event = EventProvider.getEventById(key.eventId)
+                if (event == null) {
+                    val notifier = MaterialTheme.snackbar
+                    LaunchedEffect(Unit) {
+                        notifier.notifyPlaceholder()
+                    }
+                } else {
+                    ExpandedEventCard(event)
+                }
+            }
+        }
+    )
 }
 //endregion
 
@@ -214,11 +237,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//region Interface design
 @Composable
 fun EventsAndTicketsApp() {
-    val navController = rememberNavController()
-    val startDestination = Destination.TrendingAppSection
+    val navigationState = rememberNavState(
+        Destination.TrendingAppSection,
+        setOf(
+            Destination.SearchAppSection,
+            Destination.TrendingAppSection,
+            Destination.FavoritesAppSection
+    ))
+    val navigator = Navigator(navigationState)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -230,7 +258,7 @@ fun EventsAndTicketsApp() {
         }
     }
 
-    CompositionLocalProvider(LocalNavController provides navController) {
+    CompositionLocalProvider(LocalNavigator provides navigator) {
         CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -238,12 +266,13 @@ fun EventsAndTicketsApp() {
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 bottomBar = { AppNavigationBar() }
             ) { contentPadding ->
-                AppNavHost(startDestination, modifier = Modifier.padding(contentPadding))
+                AppNavigation(Modifier.padding(contentPadding))
             }
         }
     }
 }
 
+//region Interface design
 @Composable
 fun TrendingAppSection(modifier: Modifier = Modifier) {
     LazyColumn(
@@ -261,7 +290,7 @@ fun TrendingAppSection(modifier: Modifier = Modifier) {
 
 @Composable
 fun EventCard(event: Event, isFavorite: Boolean) {
-    val navController = MaterialTheme.navController
+    val navigator = MaterialTheme.navigator
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -272,7 +301,7 @@ fun EventCard(event: Event, isFavorite: Boolean) {
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
         onClick = {
-            navController.navigate(Destination.ExpandedEventCard(event.id))
+            navigator.navigate(Destination.ExpandedEventCard(event.id))
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -386,7 +415,7 @@ fun ExpandedEventCard(
             modifier = Modifier
                 .padding(horizontal = 15.dp, vertical = 15.dp)
         ) {
-            IconButton(onClick = MaterialTheme.navController::popBackStack) {
+            IconButton(onClick = MaterialTheme.navigator::goBack) {
                 Icon(
                     painter = painterResource(R.drawable.arrow_back),
                     contentDescription = stringResource(R.string.back),
