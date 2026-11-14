@@ -1,4 +1,4 @@
-package com.example.lab2
+package com.app.lets_go_app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -51,9 +51,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.lab2.model.Event
-import com.example.lab2.model.EventProvider
-import com.example.lab2.ui.theme.Lab2Theme
+import com.app.lets_go_app.model.Event
+import com.app.lets_go_app.model.EventProvider
+import com.app.lets_go_app.ui.theme.Lab2Theme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -516,8 +516,7 @@ fun ExpandedEventCard(
 
             // Купить билет
             Button(
-                onClick = { //SnackBar
-                },
+                onClick = MaterialTheme.snackbar::notifyPlaceholder,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)

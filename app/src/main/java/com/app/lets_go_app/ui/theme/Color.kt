@@ -1,4 +1,4 @@
-package com.example.lab2.ui.theme
+package com.app.lets_go_app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

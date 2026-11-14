@@ -1,6 +1,6 @@
-package com.example.lab2.model
+package com.app.lets_go_app.model
 
-import com.example.lab2.R
+import com.app.lets_go_app.R
 import java.time.Instant
 
 enum class EventType(val typeNameId: Int) {

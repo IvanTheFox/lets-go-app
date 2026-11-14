@@ -1,4 +1,4 @@
-package com.example.lab2
+package com.app.lets_go_app
 
 import org.junit.Test
 

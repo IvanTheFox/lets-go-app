@@ -1,4 +1,4 @@
-package com.example.lab2.model
+package com.app.lets_go_app.model
 
 import androidx.compose.runtime.mutableStateListOf
 import java.time.Instant
