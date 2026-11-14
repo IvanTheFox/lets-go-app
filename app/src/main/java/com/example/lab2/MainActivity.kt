@@ -79,6 +79,9 @@ val LocalPlaceholderNotifier = staticCompositionLocalOf<PlaceholderNotifier> {
     error("Notifications 'Not Implemented' were not provided")
 }
 
+val MaterialTheme.snackbar: PlaceholderNotifier
+    @Composable @ReadOnlyComposable get() = LocalPlaceholderNotifier.current
+
 fun CoroutineScope.showNotImplemented(snackbarHostState: SnackbarHostState, notImplementedMessage: String) {
     launch {
         snackbarHostState.currentSnackbarData?.dismiss()
@@ -89,18 +92,9 @@ fun CoroutineScope.showNotImplemented(snackbarHostState: SnackbarHostState, notI
         )
     }
 }
-
-val MaterialTheme.snackbar: PlaceholderNotifier
-    @Composable @ReadOnlyComposable get() = LocalPlaceholderNotifier.current
 //endregion
 
 //region Navigation implementation
-val LocalNavigator = staticCompositionLocalOf<Navigator> {
-    error("No Navigator was provided.")
-}
-val MaterialTheme.navigator: Navigator
-    @Composable @ReadOnlyComposable get() = LocalNavigator.current
-
 //region Navigation destinations
 @Serializable
 sealed class MainAppSection(
@@ -124,29 +118,11 @@ sealed interface Destination: NavKey {
 }
 //endregion
 
-@Composable
-fun AppNavigationBar() {
-    val navigator = MaterialTheme.navigator
-    NavigationBar(
-        windowInsets = NavigationBarDefaults.windowInsets,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer
-    ) {
-        val mainSections: List<MainAppSection> = listOf(
-            Destination.SearchAppSection,
-            Destination.TrendingAppSection,
-            Destination.FavoritesAppSection
-        )
-        mainSections.forEach { section ->
-            NavigationBarItem(
-                selected = navigator.state.activeSection == section,
-                onClick = { navigator.navigate(section) },
-                icon = { Icon(painterResource(section.iconId), stringResource(section.nameId)) },
-                label = { Text(stringResource(section.nameId)) },
-                alwaysShowLabel = false
-            )
-        }
-    }
+val LocalNavigator = staticCompositionLocalOf<Navigator> {
+    error("No Navigator was provided.")
 }
+val MaterialTheme.navigator: Navigator
+    @Composable @ReadOnlyComposable get() = LocalNavigator.current
 
 class NavigationState(
     activeSection: MutableState<MainAppSection>,
@@ -156,6 +132,21 @@ class NavigationState(
     val currentBackStack: NavBackStack<NavKey>
         get() = backStacks[activeSection] ?: error("Tried to switch to an unknown app section.")
 }
+
+class Navigator(val state: NavigationState) {
+    fun navigate(destination: Destination) {
+        if (destination is MainAppSection) {
+            state.activeSection = destination
+        } else {
+            state.currentBackStack.add(destination)
+        }
+    }
+
+    fun goBack() {
+        state.currentBackStack.removeLastOrNull()
+    }
+}
+
 @Composable
 fun rememberNavState(
     startAppSection: MainAppSection,
@@ -171,20 +162,6 @@ fun rememberNavState(
 
     return remember(startAppSection, appSections) {
         NavigationState(activeSection, backStacks)
-    }
-}
-
-class Navigator(val state: NavigationState) {
-    fun navigate(destination: Destination) {
-        if (destination is MainAppSection) {
-            state.activeSection = destination
-        } else {
-            state.currentBackStack.add(destination)
-        }
-    }
-
-    fun goBack() {
-        state.currentBackStack.removeLastOrNull()
     }
 }
 
@@ -223,6 +200,30 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
     )
 }
+
+@Composable
+fun AppNavigationBar() {
+    val navigator = MaterialTheme.navigator
+    NavigationBar(
+        windowInsets = NavigationBarDefaults.windowInsets,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        val mainSections: List<MainAppSection> = listOf(
+            Destination.SearchAppSection,
+            Destination.TrendingAppSection,
+            Destination.FavoritesAppSection
+        )
+        mainSections.forEach { section ->
+            NavigationBarItem(
+                selected = navigator.state.activeSection == section,
+                onClick = { navigator.navigate(section) },
+                icon = { Icon(painterResource(section.iconId), stringResource(section.nameId)) },
+                label = { Text(stringResource(section.nameId)) },
+                alwaysShowLabel = false
+            )
+        }
+    }
+}
 //endregion
 
 class MainActivity : ComponentActivity() {
@@ -258,16 +259,17 @@ fun EventsAndTicketsApp() {
         }
     }
 
-    CompositionLocalProvider(LocalNavigator provides navigator) {
-        CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = MaterialTheme.colorScheme.surface,
-                snackbarHost = { SnackbarHost(snackbarHostState) },
-                bottomBar = { AppNavigationBar() }
-            ) { contentPadding ->
-                AppNavigation(Modifier.padding(contentPadding))
-            }
+    CompositionLocalProvider(
+        LocalNavigator provides navigator,
+        LocalPlaceholderNotifier provides placeholderNotifier
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.surface,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = { AppNavigationBar() }
+        ) { contentPadding ->
+            AppNavigation(Modifier.padding(contentPadding))
         }
     }
 }
