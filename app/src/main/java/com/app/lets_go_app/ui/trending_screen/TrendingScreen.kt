@@ -1,5 +1,4 @@
 package com.app.lets_go_app.ui.trending_screen
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,8 +13,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,16 +30,17 @@ fun TrendingAppSection(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collect { lastVisibleIndex ->
-                if (lastVisibleIndex != null &&
-                    lastVisibleIndex >= uiState.events.size - 1 &&
-                    !uiState.isLoading
-                ) {
-                    viewModel.loadMoreTrendingCards()
-                }
-            }
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            lastVisibleItem != null && lastVisibleItem.index >= uiState.events.size - 1
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore, uiState.isLoading) {
+        if (shouldLoadMore && !uiState.isLoading) {
+            viewModel.loadMoreTrendingCards()
+        }
     }
 
     LazyColumn(
