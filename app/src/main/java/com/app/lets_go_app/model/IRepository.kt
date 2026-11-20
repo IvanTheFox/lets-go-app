@@ -10,6 +10,6 @@ interface IRepository {
     fun getFilteredEventsFrom(filter: EventFilter, count: Int): List<Event>?
 
     // Setters
-    fun setFavoriteEvent(eventId: Int, isFavorite: Boolean)
+    fun setFavoriteEvent(eventId: Int, isFavorite: Boolean): Boolean
     fun updateFavoriteEvents(): Boolean
 }
