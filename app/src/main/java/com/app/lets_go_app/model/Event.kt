@@ -17,5 +17,6 @@ data class Event(
     val type: EventType,
     val price: Double,
     val datetime: Instant,
-    val timesFavorited: Int
+    val timesFavorited: Int,
+    val isFavorite: Boolean
 )
