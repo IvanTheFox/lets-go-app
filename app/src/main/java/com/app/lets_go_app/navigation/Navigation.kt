@@ -56,7 +56,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         backStack = navigator.state.currentBackStack,
         onBack = { navigator.goBack() },
         entryProvider = entryProvider {
-            entry<Destination.TrendingAppSection> { TrendingAppSection() }
+            entry<Destination.TrendingAppSection> { TrendingAppSection(repository = repository)  }
             entry<Destination.SearchAppSection> {
                 val notifier = MaterialTheme.snackbar
                 LaunchedEffect(Unit) {
