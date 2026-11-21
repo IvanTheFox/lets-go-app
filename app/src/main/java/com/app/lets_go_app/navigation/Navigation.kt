@@ -1,5 +1,9 @@
 package com.app.lets_go_app.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -9,17 +13,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSerializable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import com.app.lets_go_app.model.EventProvider
+import com.app.lets_go_app.LetsGoApp
+import com.app.lets_go_app.model.Event
 import com.app.lets_go_app.ui.components.ExpandedEventCard
 import com.app.lets_go_app.ui.components.snackbar.snackbar
 import com.app.lets_go_app.ui.trending_screen.TrendingAppSection
@@ -70,14 +80,36 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 }
             }
             entry<Destination.ExpandedEventCard> { key ->
-                val event = EventProvider.getEventById(key.eventId)
-                if (event == null) {
-                    val notifier = MaterialTheme.snackbar
-                    LaunchedEffect(Unit) {
-                        notifier.notifyPlaceholder()
+                val repository = (LocalContext.current.applicationContext as LetsGoApp).container.repository
+
+                var event by remember(key.eventId) { mutableStateOf<Event?>(null) }
+                var isLoading by remember(key.eventId) { mutableStateOf(true) }
+
+                LaunchedEffect(key.eventId) {
+                    event = repository.getEventById(key.eventId)
+                    isLoading = false
+                }
+
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
-                } else {
-                    ExpandedEventCard(event)
+                    event == null -> {
+                        val notifier = MaterialTheme.snackbar
+                        LaunchedEffect(Unit) {
+                            notifier.notifyPlaceholder()
+                        }
+                    }
+                    else -> {
+                        ExpandedEventCard(event!!)
+                    }
                 }
             }
         }

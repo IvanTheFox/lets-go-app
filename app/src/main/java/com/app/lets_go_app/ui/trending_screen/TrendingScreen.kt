@@ -58,7 +58,7 @@ fun TrendingAppSection(
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         items(uiState.events) { event ->
-            EventCard(event, false)
+            EventCard(event)
         }
 
         item {

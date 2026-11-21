@@ -2,14 +2,16 @@ package com.app.lets_go_app.model
 
 interface IRepository {
     // Getters
-    fun getTrendingEvents(count: Int): List<Event>?
-    fun getTrendingEventsFrom(fromId: Int, count: Int): List<Event>?
-    fun getFavoriteEvents(count: Int): List<Event>?
-    fun getFavoriteEventsFrom(fromId: Int, count: Int): List<Event>?
-    fun getFilteredEvents(filter: EventFilter, count: Int): List<Event>?
-    fun getFilteredEventsFrom(filter: EventFilter, count: Int): List<Event>?
+    suspend fun getEventById(id: Int): Event?
+    suspend fun getTrendingEvents(count: Int): List<Event>?
+    suspend fun getTrendingEventsFrom(fromId: Int, count: Int): List<Event>?
+    suspend fun getFavoriteEvents(count: Int): List<Event>?
+    suspend fun getFavoriteEventsFrom(fromId: Int, count: Int): List<Event>?
+    suspend fun getFilteredEvents(filter: EventFilter, count: Int): List<Event>?
+    suspend fun getFilteredEventsFrom(filter: EventFilter, fromId: Int, count: Int): List<Event>?
+    suspend fun isFavoriteEvent(id: Int): Boolean?
 
     // Setters
-    fun setFavoriteEvent(eventId: Int, isFavorite: Boolean): Boolean
-    fun updateFavoriteEvents(): Boolean
+    suspend fun setFavoriteEvent(eventId: Int, isFavorite: Boolean): Boolean
+    suspend fun updateFavoriteEvents(): Boolean
 }

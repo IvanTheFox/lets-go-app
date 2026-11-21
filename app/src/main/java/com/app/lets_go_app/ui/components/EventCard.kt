@@ -35,7 +35,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun EventCard(event: Event, isFavorite: Boolean) {
+fun EventCard(event: Event) {
     val navigator = MaterialTheme.navigator
     Card(
         modifier = Modifier
@@ -121,7 +121,7 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
             ) {
-                val starIcon = if (isFavorite) {
+                val starIcon = if (event.isFavorite) {
                     R.drawable.favorites
                 } else {
                     R.drawable.unfavorites
@@ -130,7 +130,7 @@ fun EventCard(event: Event, isFavorite: Boolean) {
                 Icon(
                     painter = painterResource(id = starIcon),
                     contentDescription = "Add to Favorites",
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                    tint = if (event.isFavorite) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

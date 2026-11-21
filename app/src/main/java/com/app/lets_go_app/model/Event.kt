@@ -1,6 +1,7 @@
 package com.app.lets_go_app.model
 
 import com.app.lets_go_app.R
+import kotlinx.serialization.Serializable
 import java.time.Instant
 
 enum class EventType(val typeNameId: Int) {

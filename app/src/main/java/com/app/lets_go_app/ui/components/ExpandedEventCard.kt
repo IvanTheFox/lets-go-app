@@ -40,8 +40,6 @@ fun ExpandedEventCard(
     event: Event,
     modifier: Modifier = Modifier
 ) {
-    val isFavorite = false
-
     val formattedDate = remember(event.id) {
         DateTimeFormatter.ofPattern("dd.MM.yyyy | HH:mm")
             .format(event.datetime.atZone(ZoneId.systemDefault()))
@@ -70,14 +68,14 @@ fun ExpandedEventCard(
             ) {
                 Icon(
                     painter = painterResource(
-                        id = if (isFavorite) R.drawable.favorites
+                        id = if (event.isFavorite) R.drawable.favorites
                         else R.drawable.unfavorites
                     ),
                     contentDescription = stringResource(
-                        if (isFavorite) R.string.remove_from_favorites
+                        if (event.isFavorite) R.string.remove_from_favorites
                         else R.string.add_to_favorites
                     ),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                    tint = if (event.isFavorite) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

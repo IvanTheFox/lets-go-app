@@ -42,6 +42,8 @@ class FavoritesViewModel(
     }
 
     fun toggleFavorite(eventId: Int, isFavorite: Boolean) {
-        repository.setFavoriteEvent(eventId, isFavorite)
+        viewModelScope.launch {
+            repository.setFavoriteEvent(eventId, isFavorite)
+        }
     }
 }
