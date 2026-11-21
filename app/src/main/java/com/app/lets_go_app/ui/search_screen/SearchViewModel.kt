@@ -1,12 +1,13 @@
 package com.app.lets_go_app.ui.search_screen
 
 import androidx.lifecycle.ViewModel
+import com.app.lets_go_app.model.IRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class SearchViewModel(
-    private val repository: EventRepository
+    private val repository: IRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState(isLoading = true))

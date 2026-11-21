@@ -13,7 +13,8 @@ class EventProvider {
                 EventType.CONCERT,
                 4599.0,
                 Instant.parse("2026-11-11T21:00:00Z"),
-                66
+                66,
+                false
             ),
             Event(
                 1,
@@ -21,7 +22,8 @@ class EventProvider {
                 EventType.MOVIE,
                 315.0,
                 Instant.parse("2026-12-08T17:20:00Z"),
-                91
+                91,
+                false
             ),
             Event(
                 2,
@@ -29,7 +31,8 @@ class EventProvider {
                 EventType.EXHIBITION,
                 250.0,
                 Instant.parse("2026-12-16T09:00:00Z"),
-                76
+                76,
+                false
             ),
             Event(
                 3,
@@ -37,7 +40,8 @@ class EventProvider {
                 EventType.STAND_UP,
                 1625.0,
                 Instant.parse("2027-01-25T21:30:00Z"),
-                57
+                57,
+                false
             ),
             Event(
                 4,
@@ -45,7 +49,8 @@ class EventProvider {
                 EventType.PLAY,
                 1700.0,
                 Instant.parse("2027-01-27T16:30:00Z"),
-                112
+                112,
+                false
             )
         )
 

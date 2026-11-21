@@ -13,11 +13,12 @@ import kotlinx.coroutines.launch
 class TrendingViewModel(
     private val repository: IRepository
 ) : ViewModel() {
+    companion object {
+        const val PAGE_SIZE = 10
+    }
 
     private val _uiState = MutableStateFlow(TrendingUiState(isLoading = true))
     val uiState: StateFlow<TrendingUiState> = _uiState.asStateFlow()
-
-    private val pageSize = 10
 
     init {
         loadTrendingEvents()
@@ -28,7 +29,7 @@ class TrendingViewModel(
             _uiState.update { it.copy(isLoading = true) }
 
             // Repository request
-            val initialEvents: List<Event>? = repository.getTrendingEvents(count = pageSize)
+            val initialEvents: List<Event>? = repository.getTrendingEvents(count = PAGE_SIZE)
 
             if (initialEvents == null) {
                 // Repo call error
@@ -51,7 +52,7 @@ class TrendingViewModel(
             _uiState.update { it.copy(isLoading = true) }
 
             // Repository request
-            val moreEvents: List<Event>? = repository.getTrendingEventsFrom(fromId = lastEventId, count = pageSize)
+            val moreEvents: List<Event>? = repository.getTrendingEventsFrom(fromId = lastEventId, count = PAGE_SIZE)
 
             if (moreEvents == null) {
                 // Repo call Error
